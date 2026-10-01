@@ -2,7 +2,7 @@
 
 ## Passkey authentication and EVM transactions
 
-Giano (reverse). Passkey authentication for the blockchain:  
+Giano (reverse). Passkey authentication for the blockchain using RIP7212:  
 - Live demo here: https://onaig-passkey.duckdns.org
 - Code here: [./packages/0-passkey](./packages/0-passkey) 
 
