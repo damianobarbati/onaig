@@ -42,6 +42,8 @@ type AuthenticationRequest = {
 
 app.use('*', cors({ origin: '*' }));
 
+app.get('/healthcheck', (c) => c.json(true));
+
 app.get('/env', (c) => c.json(ENV_PUBLIC));
 
 app.get('/abi', (c) => c.json(artifact.abi));
