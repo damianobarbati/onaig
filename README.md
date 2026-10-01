@@ -1,6 +1,10 @@
 # ONAIG
 
-Giano (reverse). Passkey authentication for blockchain.
+Giano (reverse). Passkey authentication for blockchain:  
+- Live demo here: https://onaig-passkey.onaig-passkey.duckdns.org  
+- Code here: [./packages/0-passkey](./packages/0-passkey) 
+
+<img src="./packages/0-passkey/client/img.png" alt="ONAIG Passkey Demo">
 
 ## Development
 
@@ -23,12 +27,3 @@ Testing:
 ```sh
 pnpm -r test
 ```
-
-## Face enrollment compatibility
-
-The face-only pipeline neutralizes background pixels before alignment and resizing, with an inward
-margin to exclude uncertain face contours.
-The default local provider uses `oath-face-demo-embedding-v5`; previous local
-registrations remain stored but require a new enrollment to use this pipeline.
-If you use a custom storage key or an HTTP authentication provider, invalidate
-previous face templates and enroll again before comparing new embeddings with them.

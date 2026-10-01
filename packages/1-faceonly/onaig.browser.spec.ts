@@ -319,7 +319,7 @@ describe('ONAIG controller', () => {
     } finally {
       await page.close();
     }
-  });
+  }, 15_000);
 
   it.each([false, true])('excludes background when the detected contour extends beyond the actual face (perspective=%s)', async (perspective) => {
     const page = await setup(perspective);

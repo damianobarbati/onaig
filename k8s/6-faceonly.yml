@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webapp
+  name: faceonly
   namespace: onaig
   annotations:
     keel.sh/policy: force
@@ -20,27 +20,27 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: webapp
+      app: faceonly
   template:
     metadata:
       labels:
-        app: webapp
+        app: faceonly
     spec:
       imagePullSecrets:
         - name: keel-dockerconfig
       containers:
-        - name: webapp
+        - name: faceonly
           image: ghcr.io/damianobarbati/onaig:latest
           imagePullPolicy: Always
           command: ["/bin/sh", "-c"]
           args:
-            - pnpm -F passkey app:preview
+            - pnpm -F faceonly preview
           ports:
-            - containerPort: 3000
+            - containerPort: 3001
           readinessProbe:
             httpGet:
               path: /
-              port: 3000
+              port: 3001
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:
@@ -50,26 +50,27 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "250m"
+
 ---
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: webapp
+  name: faceonly
   namespace: onaig
 spec:
   selector:
-    app: webapp
+    app: faceonly
   ports:
     - port: 80
-      targetPort: 3000
+      targetPort: 3001
 
 ---
 
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: webapp-ingress
+  name: faceonly-ingress
   namespace: onaig
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
@@ -78,16 +79,16 @@ metadata:
 spec:
   tls:
     - hosts:
-        - onaig-passkey.duckdns.org
-      secretName: onaig-webapp-tls
+        - onaig-faceonly.duckdns.org
+      secretName: onaig-faceonly-tls
   rules:
-    - host: onaig-passkey.duckdns.org
+    - host: onaig-faceonly.duckdns.org
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: webapp
+                name: faceonly
                 port:
                   number: 80

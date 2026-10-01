@@ -10,6 +10,7 @@ contract Ledger {
     bytes32 y;
     uint256 balance;
     uint256 nonce;
+    uint256 createdAt;
     bool exists;
   }
 
@@ -43,7 +44,7 @@ contract Ledger {
       revert InvalidSignature();
     }
 
-    users[keyHash] = User({x: x, y: y, balance: INITIAL_BALANCE, nonce: 0, exists: true});
+    users[keyHash] = User({x: x, y: y, balance: INITIAL_BALANCE, nonce: 0, createdAt: block.timestamp, exists: true});
 
     userKeys.push(keyHash);
   }
@@ -138,7 +139,8 @@ contract Ledger {
       bytes32[] memory xs,
       bytes32[] memory ys,
       uint256[] memory balances,
-      uint256[] memory nonces
+      uint256[] memory nonces,
+      uint256[] memory createdAts
     )
   {
     uint256 length = userKeys.length;
@@ -148,6 +150,7 @@ contract Ledger {
     ys = new bytes32[](length);
     balances = new uint256[](length);
     nonces = new uint256[](length);
+    createdAts = new uint256[](length);
 
     for (uint256 i = 0; i < length; i++) {
       bytes32 keyHash = userKeys[i];
@@ -158,6 +161,7 @@ contract Ledger {
       ys[i] = user.y;
       balances[i] = user.balance;
       nonces[i] = user.nonce;
+      createdAts[i] = user.createdAt;
     }
   }
 

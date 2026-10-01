@@ -14,10 +14,7 @@
   "scripts": {
     "postinstall": "pnpm audit --audit-level critical",
     "lint": "biome check --write",
-    "tsc": "tsc",
-    "test": "HEADLESS=true vitest run",
-    "test:ui": "HEADLESS=false vitest --watch",
-    "predev": "kill-port 8080 3000 3001"
+    "tsc": "tsc"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
@@ -26,7 +23,6 @@
     "@vitest/browser-playwright": "^5.0.2",
     "@vitest/coverage-v8": "^5.0.2",
     "concurrently": "^10.0.5",
-    "kill-port": "^2.0.1",
     "oxfmt": "^0.71.0",
     "oxlint": "^1.86.0",
     "playwright": "^1.63.0",

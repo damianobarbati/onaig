@@ -174,10 +174,10 @@ it('keeps real-model matches across backgrounds and exposure changes, and reject
     for (const measurement of measurements.slice(1, -1)) {
       expect(measurement.matches, `${measurement.scene}: ${measurement.scores.join(', ')}`).toEqual(new Array(measurement.matches.length).fill(true));
     }
-    console.log(
-      'Real-model similarities:',
-      measurements.map(({ scene, scores }) => ({ scene, min: Math.min(...scores).toFixed(4), max: Math.max(...scores).toFixed(4) })),
-    );
+    // console.log(
+    //   'Real-model similarities:',
+    //   measurements.map(({ scene, scores }) => ({ scene, min: Math.min(...scores).toFixed(4), max: Math.max(...scores).toFixed(4) })),
+    // );
     const negative = measurements.at(-1);
     expect(negative).toBeDefined();
     expect(Math.max(...(negative?.scores ?? [])), 'different face').toBeLessThan(0.9);

@@ -2,6 +2,8 @@
   "name": "faceonly",
   "type": "module",
   "scripts": {
+    "test": "HEADLESS=true vitest run",
+    "test:ui": "HEADLESS=false vitest --watch",
     "dev": "vite dev --open",
     "build": "pnpm vite build --config ./vite.config.ts",
     "preview": "pnpm vite preview --config ./vite.config.ts"

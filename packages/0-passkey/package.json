@@ -6,11 +6,11 @@
     "env:down": "docker compose down --volumes",
     "bc:compile": "forge build --root . --contracts server --out server/out --use 0.8.24 --via-ir --optimize --no-cache",
     "bc:deploy": "node ./server/deploy.ts",
-    "predev": "kill-port 8080 3000",
+    "predev": "lsof -t -i:8080 -i:3000 | xargs kill -9",
     "dev": "concurrently \"pnpm api\" \"pnpm app\"",
     "api": "node --no-warnings --import=amaro/transform --watch ./server/server.ts",
     "app": "pnpm vite dev --config ./vite.config.ts --open",
-    "app:build": "pnpm vite build --config ./vite.config.ts",
-    "app:preview": "pnpm vite preview --config ./vite.config.ts"
+    "build": "pnpm vite build --config ./vite.config.ts",
+    "preview": "pnpm vite preview --config ./vite.config.ts"
   }
 }

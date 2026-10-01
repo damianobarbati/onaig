@@ -11,13 +11,17 @@ import { createWalletClient, defineChain, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ENV, ENV_PUBLIC } from './env.ts';
 import { appKeyProofPayload, assertHexPublicKey, credentialForUser, hasContract, hasP256Precompile, jsonBody, parseRelayTransaction } from './helpers.ts';
+import { init } from './init.ts';
+
+const app = new Hono();
+const database = knex({ client: 'pg', connection: ENV.DB_URI });
+
+await init();
 
 if (!(await hasP256Precompile(ENV.RPC_URI))) throw new Error('P256 precompile not found');
 if (!(await hasContract(ENV.RPC_URI, ENV.CONTRACT_ADDRESS))) throw new Error('Ledger contract not found');
 
-const app = new Hono();
-const database = knex({ client: 'pg', connection: ENV.DB_URI });
-const artifact = JSON.parse(await readFile(new URL('./out/contract.sol/Ledger.json', import.meta.url), 'utf8')) as { abi: unknown };
+const artifact = JSON.parse(await readFile(new URL('./out/Ledger.sol/Ledger.json', import.meta.url), 'utf8')) as { abi: unknown };
 // Development-only wildcard. In production, restrict this to the deployed origin(s).
 const isAllowedOrigin = () => true;
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
@@ -37,6 +41,8 @@ type AuthenticationRequest = {
 };
 
 app.use('*', cors({ origin: '*' }));
+
+app.get('/healthcheck', (c) => c.json(true));
 
 app.get('/env', (c) => c.json(ENV_PUBLIC));
 
