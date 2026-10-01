@@ -17,3 +17,5 @@ The ONAIG protocol consists of two main flows:
 We have two actors:
 - client
 - server
+
+TBD.
