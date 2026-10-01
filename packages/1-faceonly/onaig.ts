@@ -396,6 +396,10 @@ function createOnaig({ root, landmark = 'live', auth = createLocalAuthProvider()
   };
 
   let stream: MediaStream | null = null;
+  let cameraPermission: PermissionStatus | null = null;
+  let permissionWatchStarted = false;
+  let cameraAutoStart = true;
+  let removeCameraPermissionWatch = () => {};
   let landmarker: FaceLandmarker | null = null;
   let session: ort.InferenceSession | null = null;
   let raf = 0;
@@ -720,6 +724,7 @@ function createOnaig({ root, landmark = 'live', auth = createLocalAuthProvider()
     session = await ort.InferenceSession.create(await cachedAssetBuffer(MODEL_URL), { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
   }
   async function startCamera() {
+    cameraAutoStart = true;
     if (stream) return true;
     if (startPromise) return startCameraId === cameraRunId ? startPromise : startPromise.then(() => startCamera());
     const cameraId = cameraRunId;
@@ -743,6 +748,15 @@ function createOnaig({ root, landmark = 'live', auth = createLocalAuthProvider()
           return false;
         }
         stream = acquired;
+        const handleTrackEnded = () => {
+          if (stream !== acquired || !cameraAutoStart) return;
+          cancelAnimationFrame(raf);
+          processingEpoch += 1;
+          stream = null;
+          video.srcObject = null;
+          restartCameraIfAllowed();
+        };
+        acquired.getVideoTracks().forEach((track) => track.addEventListener('ended', handleTrackEnded, { once: true }));
         video.srcObject = stream;
         await video.play();
         if (cameraId !== cameraRunId) return false;
@@ -762,7 +776,44 @@ function createOnaig({ root, landmark = 'live', auth = createLocalAuthProvider()
     })();
     return startPromise;
   }
+  async function cameraPermissionState() {
+    if (!('permissions' in navigator)) return null;
+    try {
+      if (!cameraPermission) cameraPermission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+      return cameraPermission.state;
+    } catch {
+      // Some browsers expose getUserMedia but not a queryable camera permission.
+      return null;
+    }
+  }
+  function restartCameraIfAllowed() {
+    if (!cameraAutoStart || stream || startPromise) return;
+    void cameraPermissionState().then((state) => {
+      if (state !== 'denied') void startCamera();
+    });
+  }
+  function watchCameraPermission() {
+    if (permissionWatchStarted) return;
+    permissionWatchStarted = true;
+    void cameraPermissionState().then(() => {
+      if (!cameraPermission) return;
+      cameraPermission.onchange = () => {
+        if (cameraPermission?.state === 'granted' || cameraPermission?.state === 'prompt') restartCameraIfAllowed();
+      };
+    });
+    // Permission changes made in browser/app settings are not surfaced by all
+    // browsers through PermissionStatus.onchange.
+    const retry = () => restartCameraIfAllowed();
+    window.addEventListener('focus', retry);
+    document.addEventListener('visibilitychange', retry);
+    removeCameraPermissionWatch = () => {
+      window.removeEventListener('focus', retry);
+      document.removeEventListener('visibilitychange', retry);
+      if (cameraPermission) cameraPermission.onchange = null;
+    };
+  }
   function stop() {
+    cameraAutoStart = false;
     cancelAnimationFrame(raf);
     processingEpoch += 1;
     registerRunId += 1;
@@ -1237,10 +1288,12 @@ function createOnaig({ root, landmark = 'live', auth = createLocalAuthProvider()
   }
   function destroy() {
     stop();
+    removeCameraPermissionWatch();
     listeners.clear();
     rootElement.replaceChildren();
   }
   video.addEventListener('loadedmetadata', resizeCanvas);
+  watchCameraPermission();
   // Keep the public API name (`live`) aligned with the demo control's legacy value (`off`).
   document.querySelector('[data-landmark-mode="off"]')?.setAttribute('data-landmark-mode', 'live');
   void startCamera();
