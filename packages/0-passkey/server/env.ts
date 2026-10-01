@@ -1,5 +1,3 @@
-// Kubernetes injects this variable into every pod. Keep localhost defaults for
-// Docker Compose/local development and use the cluster service names in Kube.
 const isKubernetes = Boolean(process.env.KUBERNETES_SERVICE_HOST);
 
 export const ENV = {
