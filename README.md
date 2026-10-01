@@ -4,7 +4,13 @@ Giano (reverse). Passkey authentication for the blockchain:
 - Live demo here: https://onaig-passkey.duckdns.org
 - Code here: [./packages/0-passkey](./packages/0-passkey) 
 
-<img src="./packages/0-passkey/client/img.png" alt="ONAIG Passkey Demo">
+<img src="./pic-passkey.png" alt="ONAIG Passkey Demo">
+
+Do you want to try something cool?  
+Mobile-ready face authentication, powered by `ghostface_fp32` model.  
+Live demo here: https://onaig-faceonly.duckdns.org
+
+<img src="./pic-faceonly.png" alt="ONAIG Faceonly Demo">
 
 ## Development
 
