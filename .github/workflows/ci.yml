@@ -45,9 +45,7 @@ jobs:
         run: pnpm tsc
 
       - name: Start testing environment
-        run: |
-          pnpm env:up
-          timeout 10 bash -c -- "while ! docker run --rm --network=host -i postgres:18-alpine pg_isready --quiet --timeout=1 -d ${DB_URI:?}; do sleep 1; done"
+        run: pnpm -F passkey env:up
 
       - name: Test builds
         run: pnpm -r build
