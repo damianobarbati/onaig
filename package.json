@@ -14,9 +14,7 @@
   "scripts": {
     "postinstall": "pnpm audit --audit-level critical",
     "lint": "biome check --write",
-    "tsc": "tsc",
-    "test": "HEADLESS=true vitest run",
-    "test:ui": "HEADLESS=false vitest --watch"
+    "tsc": "tsc"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
