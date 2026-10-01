@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: onaig-webapp
+  name: webapp
   namespace: onaig
   annotations:
     keel.sh/policy: force
@@ -37,9 +37,6 @@ spec:
             - pnpm -F passkey app:preview
           ports:
             - containerPort: 3000
-          envFrom:
-            - secretRef:
-                name: envs
           readinessProbe:
             httpGet:
               path: /
@@ -53,17 +50,12 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "250m"
-      volumes:
-        - name: runtime-env
-          configMap:
-            name: webapp-env
-
 ---
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: webapp-service
+  name: webapp
   namespace: onaig
 spec:
   selector:
@@ -96,6 +88,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: webapp-service
+                name: webapp
                 port:
                   number: 80

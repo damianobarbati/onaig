@@ -81,5 +81,5 @@ jobs:
         if: github.event_name == 'push'
         run: |
           REGISTRY_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
-          docker tag api ghcr.io/$REGISTRY_OWNER/onaig:latest
+          docker tag onaig ghcr.io/$REGISTRY_OWNER/onaig:latest
           docker push ghcr.io/$REGISTRY_OWNER/onaig:latest
