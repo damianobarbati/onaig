@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
+    <title>ONAIG Auth</title>
+    <script>
+    tailwind = {
+      config: { theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] } } } },
+    };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+    @layer base {
+      body {
+        @apply bg-slate-950 text-slate-100 antialiased;
+      }
+      html,
+      body {
+        @apply h-full overflow-hidden;
+      }
+      video {
+        transform: scaleX(-1);
+      }
+    }
+
+    @layer components {
+      .app-shell {
+        @apply mx-auto flex h-[100dvh] min-h-0 w-full max-w-5xl flex-col overflow-hidden px-3 py-[env(safe-area-inset-top)] sm:px-6;
+      }
+      .video-card {
+        @apply relative flex min-h-0 w-full flex-1 overflow-hidden rounded-3xl border border-slate-800 bg-black shadow-2xl shadow-black/30 sm:h-auto sm:flex-none sm:aspect-video;
+      }
+      .overlay-card {
+        @apply rounded-2xl border border-white/10 bg-slate-950/75 backdrop-blur;
+      }
+      .match-panel {
+        @apply pointer-events-none absolute bottom-20 right-3 rounded-2xl border border-emerald-700/60 bg-slate-950/90 px-4 py-3 text-right text-emerald-300 shadow-xl backdrop-blur;
+      }
+      .match-panel.is-no-match {
+        @apply border-rose-700/60 text-rose-300;
+      }
+      .match-check {
+        @apply h-5 w-5 shrink-0 text-emerald-300;
+      }
+      .match-check path {
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2.5;
+        stroke-dasharray: 24;
+        stroke-dashoffset: 24;
+      }
+      .match-check.is-visible {
+        animation: match-check-pop 220ms ease-out both;
+      }
+      .match-check.is-visible path {
+        animation: match-check-draw 360ms 80ms ease-out forwards;
+      }
+      @keyframes match-check-pop {
+        from {
+          opacity: 0;
+          transform: scale(0.7);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes match-check-draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .match-check.is-visible,
+        .match-check.is-visible path {
+          animation: none;
+        }
+        .match-check.is-visible path {
+          stroke-dashoffset: 0;
+        }
+      }
+      .action-button {
+        @apply flex-1 rounded-xl px-4 py-3 text-sm font-semibold backdrop-blur transition disabled:cursor-not-allowed disabled:opacity-50;
+      }
+      .register-button {
+        @apply bg-cyan-400/95 text-slate-950 hover:bg-cyan-300;
+      }
+      .register-button.is-enrolled {
+        @apply border border-rose-300/50 bg-slate-950/80 text-rose-200 hover:bg-rose-950/70;
+      }
+      .login-button {
+        @apply bg-violet-400/95 text-slate-950 hover:bg-violet-300;
+      }
+      .landmark-button {
+        @apply rounded-xl px-3 py-1.5 text-slate-300 transition hover:bg-white/10;
+      }
+      .landmark-button.is-active {
+        @apply bg-emerald-400 font-semibold text-slate-950;
+      }
+    }
+
+    .onaig-root,
+    .onaig-video,
+    .onaig-landmark-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .onaig-video,
+    .onaig-landmark-canvas {
+      object-fit: cover;
+    }
+    .onaig-landmark-canvas {
+      pointer-events: none;
+      transform: scaleX(-1);
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    </style>
+  </head>
+  <body>
+    <main id="app"></main>
+    <script type="module" src="main.ts"></script>
+  </body>
+</html>

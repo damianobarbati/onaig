@@ -1,0 +1,50 @@
+{
+  "name": "onaig",
+  "version": "1.0.0",
+  "private": true,
+  "author": "Damiano Barbati <damiano.barbati@gmail.com> (https://github.com/damianobarbati)",
+  "repository": "https://github.com/damianobarbati/onaig",
+  "description": "Giano (reverse). Passkey authentication for blockchain.",
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "pnpm": ">=12.5",
+    "node": ">=26.7"
+  },
+  "type": "module",
+  "scripts": {
+    "postinstall": "pnpm audit --audit-level critical",
+    "lint": "biome check --write",
+    "tsc": "tsc",
+    "test": "HEADLESS=true vitest run",
+    "test:ui": "HEADLESS=false vitest --watch",
+    "predev": "kill-port 8080 3000 3001"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@types/node": "^26.6.3",
+    "@types/pg": "^8.23.1",
+    "@vitest/browser-playwright": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.2",
+    "concurrently": "^10.0.5",
+    "kill-port": "^2.0.1",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
+    "playwright": "^1.63.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.3",
+    "@passwordless-id/webauthn": "^2.4.0",
+    "amaro": "^1.2.1",
+    "hono": "^4.13.12",
+    "knex": "^3.3.0",
+    "ox": "^1.8.5",
+    "pg": "^8.23.0",
+    "viem": "^2.57.1"
+  },
+  "resolutions": {
+    "loadsh": ">=4.17.12"
+  }
+}

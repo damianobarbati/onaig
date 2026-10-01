@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: onaig-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: onaig
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./server/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d onaig"]
+      start_period: 1s
+      interval: 1s
+      timeout: 1s
+      retries: 3
+
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: onaig-bc
+    restart: unless-stopped
+    entrypoint: ""
+    command: >
+      anvil
+      --host 0.0.0.0
+      --chain-id 31337
+      --hardfork osaka
+      --accounts 10
+      --balance 10000
+      --block-time 1
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://127.0.0.1:8545"]
+      start_period: 1s
+      interval: 1s
+      timeout: 1s
+      retries: 3

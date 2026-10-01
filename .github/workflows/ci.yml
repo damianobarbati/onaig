@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+    tags: ['*']
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    timeout-minutes: 5
+    runs-on: ubuntu-26.04
+    environment: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v5
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: 'package.json'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          pnpm install --silent --frozen-lockfile --prefer-offline
+          pnpm exec playwright install chromium-headless-shell
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm tsc
+
+      - name: Start testing environment
+        run: |
+          pnpm env:up
+          timeout 10 bash -c -- "while ! docker run --rm --network=host -i postgres:18-alpine pg_isready --quiet --timeout=1 -d ${DB_URI:?}; do sleep 1; done"
+
+      - name: Test builds
+        run: pnpm -r build
+
+      - name: Test services
+        run: pnpm -r test
+
+  build-and-deploy:
+    timeout-minutes: 5
+    runs-on: ubuntu-26.04
+    needs: [test]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build image
+        run: DOCKER_BUILDKIT=1 docker build --quiet --rm --force-rm -t api -f ./Dockerfile .
+
+      - name: GitHub Registry login
+        if: github.event_name == 'push'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push images
+        if: github.event_name == 'push'
+        run: |
+          REGISTRY_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          docker tag api ghcr.io/$REGISTRY_OWNER/onaig:latest
+          docker push ghcr.io/$REGISTRY_OWNER/onaig:latest

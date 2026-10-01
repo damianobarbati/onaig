@@ -1,0 +1,9 @@
+{
+  "name": "faceonly",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --open",
+    "build": "pnpm vite build --config ./vite.config.ts",
+    "preview": "pnpm vite preview --config ./vite.config.ts"
+  }
+}

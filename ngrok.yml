@@ -1,0 +1,12 @@
+version: 3
+
+tunnels:
+  webapp:
+    addr: 3000
+    proto: http
+    hostname: onaig-passkey.ngrok.dev
+
+  webapp2:
+    addr: 3001
+    proto: http
+    hostname: onaig-faceonly.ngrok.dev
