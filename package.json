@@ -4,7 +4,7 @@
   "private": true,
   "author": "Damiano Barbati <damiano.barbati@gmail.com> (https://github.com/damianobarbati)",
   "repository": "https://github.com/damianobarbati/onaig",
-  "description": "Giano (reverse). Passkey authentication for blockchain.",
+  "description": "Giano (reverse). Passkey authentication for the blockchain.",
   "packageManager": "pnpm@12.5.1",
   "engines": {
     "pnpm": ">=12.5",
