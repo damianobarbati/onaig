@@ -38,7 +38,7 @@ root.innerHTML = `
         <div class="rounded-2xl bg-slate-900 p-5 ring-1 ring-white/10"><h2 class="text-lg font-semibold">Authentication</h2><label class="mt-4 block text-sm text-slate-400">Account name<input id="identifier" class="mt-2 w-full rounded-xl border-0 bg-slate-800 px-3 py-2 text-slate-100 ring-1 ring-white/10 outline-none focus:ring-cyan-400" placeholder="Used only when registering" /><span class="mt-2 block text-xs text-slate-500">Login discovers your passkey automatically on this or another device.</span></label><div class="mt-4 grid grid-cols-2 gap-2"><button id="register" class="rounded-xl bg-cyan-400 px-3 py-2 font-semibold text-slate-950 hover:bg-cyan-300">Register</button><button id="login" class="rounded-xl bg-slate-700 px-3 py-2 font-semibold hover:bg-slate-600">Log in</button></div></div>
         <div class="rounded-2xl bg-slate-900 p-5 ring-1 ring-white/10 lg:col-span-2"><div class="flex items-start justify-between gap-4"><div><h2 class="text-lg font-semibold">Current user</h2><p id="current-user" class="mt-1 text-sm text-slate-400">No authenticated user.</p></div><button id="register-contract" class="hidden rounded-xl bg-emerald-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300">Register on-chain</button></div><div class="mt-6 grid gap-4 sm:grid-cols-3"><div class="rounded-xl bg-slate-800 p-4"><p class="text-xs uppercase tracking-wide text-slate-400">Balance</p><p id="balance" class="mt-2 text-2xl font-semibold">—</p></div><div class="rounded-xl bg-slate-800 p-4"><p class="text-xs uppercase tracking-wide text-slate-400">Nonce</p><p id="nonce" class="mt-2 text-2xl font-semibold">—</p></div><div class="rounded-xl bg-slate-800 p-4"><p class="text-xs uppercase tracking-wide text-slate-400">Public key</p><p id="public-key" class="mt-2 truncate font-mono text-xs text-slate-300">—</p></div></div></div>
       </section>
-      <section class="rounded-2xl bg-slate-900 p-5 ring-1 ring-white/10"><div><h2 class="text-lg font-semibold">Ledger</h2><p class="mt-1 text-sm text-slate-400">Data read directly from the public RPC.</p></div><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[720px] text-left text-sm"><thead class="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500"><tr><th class="px-3 py-3">Public key</th><th class="px-3 py-3">Hash</th><th class="px-3 py-3">Balance</th><th class="px-3 py-3">Nonce</th><th class="px-3 py-3 text-right">Action</th></tr></thead><tbody id="users" class="divide-y divide-white/5"></tbody></table></div></section>
+      <section class="rounded-2xl bg-slate-900 p-5 ring-1 ring-white/10"><div><h2 class="text-lg font-semibold">Ledger</h2><p class="mt-1 text-sm text-slate-400">Data read directly from the public RPC.</p></div><div class="mt-4 overflow-x-auto"><table class="w-full min-w-[840px] text-left text-sm"><thead class="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500"><tr><th class="px-3 py-3">Public key</th><th class="px-3 py-3">Hash</th><th class="px-3 py-3">Created</th><th class="px-3 py-3">Balance</th><th class="px-3 py-3">Nonce</th><th class="px-3 py-3 text-right">Action</th></tr></thead><tbody id="users" class="divide-y divide-white/5"></tbody></table></div></section>
     </div>
   </div>`;
 
@@ -135,6 +135,7 @@ async function register() {
   currentUser = { identifier: registration.id, key, registeredOnChain: false };
   setStatus('Registration completed');
   await refreshCurrentUser();
+  await refreshUsers();
 }
 
 async function login() {
@@ -150,6 +151,7 @@ async function login() {
   currentUser = { identifier: result.identifier, key, registeredOnChain: false };
   setStatus('Authentication completed');
   await refreshCurrentUser();
+  await refreshUsers();
 }
 
 async function registerOnChain() {
@@ -188,16 +190,37 @@ function shortPublicKey(x: `0x${string}`, y: `0x${string}`) {
   return `0x${x.slice(2, 6)}....${y.slice(-4)}`;
 }
 
+function formatCreationDate(createdAt: bigint) {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(Number(createdAt) * 1000);
+}
+
 async function refreshUsers() {
   const result = await chainClient.readContract({ address: CONTRACT_ADDRESS, abi: ledgerAbi, functionName: 'getUsers' });
-  const [hashes, xs, ys, balances, nonces] = result as readonly [`0x${string}`[], `0x${string}`[], `0x${string}`[], bigint[], bigint[]];
+  const [hashes, xs, ys, balances, nonces, createdAts] = result as readonly [`0x${string}`[], `0x${string}`[], `0x${string}`[], bigint[], bigint[], bigint[]];
+  const currentKey = currentUser ? `${currentUser.key.x}:${currentUser.key.y}`.toLowerCase() : undefined;
+  const users = hashes
+    .map((hash, index) => ({
+      hash,
+      x: xs[index],
+      y: ys[index],
+      balance: balances[index],
+      nonce: nonces[index],
+      createdAt: createdAts[index],
+      isCurrentUser: currentKey === `${xs[index]}:${ys[index]}`.toLowerCase(),
+      index,
+    }))
+    .sort(
+      (left, right) =>
+        Number(right.isCurrentUser) - Number(left.isCurrentUser) ||
+        (right.createdAt > left.createdAt ? 1 : right.createdAt < left.createdAt ? -1 : left.index - right.index),
+    );
   $('#users').innerHTML =
-    hashes
+    users
       .map(
-        (hash, index) =>
-          `<tr><td class="px-3 py-3 font-mono text-xs text-slate-300">${shortPublicKey(xs[index], ys[index])}</td><td class="px-3 py-3 font-mono text-xs text-slate-400">${hash.slice(0, 10)}…</td><td class="px-3 py-3">${balances[index]}</td><td class="px-3 py-3">${nonces[index]}</td><td class="px-3 py-3 text-right"><button data-recipient-x="${xs[index]}" data-recipient-y="${ys[index]}" class="send rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-semibold hover:bg-slate-600">Send funds</button></td></tr>`,
+        ({ hash, x, y, balance, nonce, createdAt, isCurrentUser }) =>
+          `<tr${isCurrentUser ? ' aria-current="true"' : ''} class="${isCurrentUser ? 'bg-cyan-400/10 ring-1 ring-inset ring-cyan-400/40' : ''}"><td class="px-3 py-3 font-mono text-xs text-slate-300"><div class="flex items-center gap-2">${shortPublicKey(x, y)}${isCurrentUser ? '<span class="rounded-full bg-cyan-400/20 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-cyan-300">You</span>' : ''}</div></td><td class="px-3 py-3 font-mono text-xs text-slate-400">${hash.slice(0, 10)}…</td><td class="px-3 py-3 text-slate-300">${formatCreationDate(createdAt)}</td><td class="px-3 py-3">${balance}</td><td class="px-3 py-3">${nonce}</td><td class="px-3 py-3 text-right"><button data-recipient-x="${x}" data-recipient-y="${y}" class="send rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-semibold hover:bg-slate-600">Send funds</button></td></tr>`,
       )
-      .join('') || '<tr><td colspan="5" class="px-3 py-8 text-center text-slate-500">No registered users.</td></tr>';
+      .join('') || '<tr><td colspan="6" class="px-3 py-8 text-center text-slate-500">No registered users.</td></tr>';
 }
 
 async function sendFunds(button: HTMLButtonElement) {

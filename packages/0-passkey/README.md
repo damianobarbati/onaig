@@ -11,7 +11,6 @@ To start, install deps with `pnpm i` in the root folder, then:
 pnpm -F passkey env:down
 pnpm -F passkey env:up
 pnpm -F passkey bc:compile
-pnpm -F passkey bc:deploy
 pnpm -F passkey dev
 # start ngrok!
 ```
