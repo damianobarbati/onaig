@@ -3,7 +3,7 @@ import { createPublicClient, createWalletClient, defineChain, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
 import { ENV } from './env.ts';
 
-const artifact = JSON.parse(await readFile(new URL('./out/contract.sol/Ledger.json', import.meta.url), 'utf8'));
+const artifact = JSON.parse(await readFile(new URL('./out/Ledger.sol/Ledger.json', import.meta.url), 'utf8'));
 
 const anvil = defineChain({
   id: 31337,
