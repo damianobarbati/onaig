@@ -30,8 +30,11 @@ spec:
         - name: keel-dockerconfig
       containers:
         - name: webapp
-          image: ghcr.io/damianobarbati/onaig-webapp-production
+          image: ghcr.io/damianobarbati/onaig:latest
           imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+            - pnpm -F passkey app:preview --host 0.0.0.0 --port 80
           ports:
             - containerPort: 80
           envFrom:

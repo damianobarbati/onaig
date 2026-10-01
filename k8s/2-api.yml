@@ -30,8 +30,11 @@ spec:
         - name: keel-dockerconfig
       containers:
         - name: api
-          image: ghcr.io/damianobarbati/onaig-api-production
+          image: ghcr.io/damianobarbati/onaig:latest
           imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+            - pnpm -F passkey api
           ports:
             - containerPort: 8080
           envFrom:
