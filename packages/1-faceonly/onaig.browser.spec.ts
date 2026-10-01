@@ -251,75 +251,79 @@ async function liveness(page: Page) {
 }
 
 describe('ONAIG controller', () => {
-  it.each([false, true])('neutralizes background before resampling and preserves RGB/grayscale tensors (perspective=%s)', async (perspective) => {
-    const page = await setup(perspective);
-    try {
-      await page.evaluate(() => {
-        window.test.syntheticFace = true;
-        window.test.authMode = 'reject';
-      });
-      await startLogin(page);
-      for (const geometry of [
-        { angle: 0, scale: 2, x: 190, y: 95 },
-        { angle: 0.2, scale: 1.5, x: 250, y: 140 },
-        { angle: -0.2, scale: 2.5, x: 180, y: 100 },
-      ]) {
-        await page.evaluate((geometry) => {
-          Object.assign(window.test.pose, geometry);
-          window.test.inputs = [];
-          window.test.captureInputs = true;
-        }, geometry);
-        for (const background of [0, 1, 2, 3]) {
-          await page.evaluate((background) => {
-            window.test.background = background;
-          }, background);
-          await page.waitForFunction((background) => window.test.inputs.some((input) => input.background === background && input.grayscale), background);
-        }
-        const comparison = await page.evaluate(() => {
-          const inputs = window.test.inputs;
-          return [false, true].map((grayscale) => {
-            const baseline = inputs.find((input) => input.background === 0 && input.grayscale === grayscale);
-            if (!baseline) return false;
-            return [1, 2, 3].every((background) => {
-              const candidate = inputs.find((input) => input.background === background && input.grayscale === grayscale);
-              if (!candidate) return false;
-              return baseline.data.every((value, i) => value === candidate.data[i]);
+  it.each([false, true])(
+    'neutralizes background before resampling and preserves RGB/grayscale tensors (perspective=%s)',
+    async (perspective) => {
+      const page = await setup(perspective);
+      try {
+        await page.evaluate(() => {
+          window.test.syntheticFace = true;
+          window.test.authMode = 'reject';
+        });
+        await startLogin(page);
+        for (const geometry of [
+          { angle: 0, scale: 2, x: 190, y: 95 },
+          { angle: 0.2, scale: 1.5, x: 250, y: 140 },
+          { angle: -0.2, scale: 2.5, x: 180, y: 100 },
+        ]) {
+          await page.evaluate((geometry) => {
+            Object.assign(window.test.pose, geometry);
+            window.test.inputs = [];
+            window.test.captureInputs = true;
+          }, geometry);
+          for (const background of [0, 1, 2, 3]) {
+            await page.evaluate((background) => {
+              window.test.background = background;
+            }, background);
+            await page.waitForFunction((background) => window.test.inputs.some((input) => input.background === background && input.grayscale), background);
+          }
+          const comparison = await page.evaluate(() => {
+            const inputs = window.test.inputs;
+            return [false, true].map((grayscale) => {
+              const baseline = inputs.find((input) => input.background === 0 && input.grayscale === grayscale);
+              if (!baseline) return false;
+              return [1, 2, 3].every((background) => {
+                const candidate = inputs.find((input) => input.background === background && input.grayscale === grayscale);
+                if (!candidate) return false;
+                return baseline.data.every((value, i) => value === candidate.data[i]);
+              });
             });
           });
-        });
-        expect(comparison).toEqual([true, true]);
-        if (!perspective) {
-          const source = await page.evaluate(() => {
-            const t = window.test,
-              width = t.controller.video.videoWidth;
-            const p = t.pose;
-            if (!t.sourcePixels) throw new Error('Missing masked source image.');
-            const x = Math.floor(p.scale * (56 * Math.cos(p.angle) - 66 * Math.sin(p.angle)) + p.x);
-            const y = Math.floor(p.scale * (56 * Math.sin(p.angle) + 66 * Math.cos(p.angle)) + p.y);
-            const j = (y * width + x) * 4;
-            const dx = x + 0.5 - p.x,
-              dy = y + 0.5 - p.y;
-            const level = 55 + ((dx * Math.cos(p.angle) + dy * Math.sin(p.angle)) / p.scale) * 0.7 + ((-dx * Math.sin(p.angle) + dy * Math.cos(p.angle)) / p.scale) * 0.4;
-            return {
-              background: Array.from(t.sourcePixels.slice(0, 4)),
-              face: Array.from(t.sourcePixels.slice(j, j + 4)),
-              expected: Array.from(new Uint8ClampedArray([level, level * 0.85, level * 0.7, 255])),
-              dimensions: [width, t.controller.video.videoHeight],
-            };
-          });
-          expect(source.dimensions).toEqual([640, 480]);
-          expect(source.background).toEqual([128, 128, 128, 255]);
-          expect(source.face).toEqual(source.expected);
+          expect(comparison).toEqual([true, true]);
+          if (!perspective) {
+            const source = await page.evaluate(() => {
+              const t = window.test,
+                width = t.controller.video.videoWidth;
+              const p = t.pose;
+              if (!t.sourcePixels) throw new Error('Missing masked source image.');
+              const x = Math.floor(p.scale * (56 * Math.cos(p.angle) - 66 * Math.sin(p.angle)) + p.x);
+              const y = Math.floor(p.scale * (56 * Math.sin(p.angle) + 66 * Math.cos(p.angle)) + p.y);
+              const j = (y * width + x) * 4;
+              const dx = x + 0.5 - p.x,
+                dy = y + 0.5 - p.y;
+              const level = 55 + ((dx * Math.cos(p.angle) + dy * Math.sin(p.angle)) / p.scale) * 0.7 + ((-dx * Math.sin(p.angle) + dy * Math.cos(p.angle)) / p.scale) * 0.4;
+              return {
+                background: Array.from(t.sourcePixels.slice(0, 4)),
+                face: Array.from(t.sourcePixels.slice(j, j + 4)),
+                expected: Array.from(new Uint8ClampedArray([level, level * 0.85, level * 0.7, 255])),
+                dimensions: [width, t.controller.video.videoHeight],
+              };
+            });
+            expect(source.dimensions).toEqual([640, 480]);
+            expect(source.background).toEqual([128, 128, 128, 255]);
+            expect(source.face).toEqual(source.expected);
+          }
         }
+        await page.evaluate(() => {
+          window.test.captureInputs = false;
+        });
+        expect(await page.evaluate(() => window.test.events.some((e) => e.type === 'login-success'))).toBe(false);
+      } finally {
+        await page.close();
       }
-      await page.evaluate(() => {
-        window.test.captureInputs = false;
-      });
-      expect(await page.evaluate(() => window.test.events.some((e) => e.type === 'login-success'))).toBe(false);
-    } finally {
-      await page.close();
-    }
-  }, 15_000);
+    },
+    15_000,
+  );
 
   it.each([false, true])('excludes background when the detected contour extends beyond the actual face (perspective=%s)', async (perspective) => {
     const page = await setup(perspective);

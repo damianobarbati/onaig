@@ -112,7 +112,12 @@ async function relay(data: `0x${string}`) {
   return result.hash;
 }
 
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 async function register() {
+  const hasPlatformAuthenticator = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  if (!hasPlatformAuthenticator) return window.alert('Questo dispositivo non dispone di Face ID, Touch ID o autenticazione locale compatibile.');
+
   const identifier = $<HTMLInputElement>('#identifier').value.trim();
   if (!identifier) throw new Error('Enter a passkey identifier.');
   const options = await api<{ challenge: string; userId: string }>('/auth/register/options', { method: 'POST', body: JSON.stringify({ identifier }) });
@@ -122,9 +127,16 @@ async function register() {
     user: { id: options.userId, name: identifier, displayName: identifier },
     userVerification: 'required',
     discoverable: 'required',
-    hints: ['hybrid', 'security-key'],
     attestation: false,
-    customProperties: { extensions: { prf: { eval: { first: salt } } } },
+    hints: isMobile ? ['client-device'] : ['hybrid'],
+    customProperties: {
+      // authenticatorSelection: {
+      //   authenticatorAttachment: 'platform',
+      //   residentKey: 'required',
+      //   userVerification: 'required',
+      // },
+      extensions: { prf: { eval: { first: salt } } },
+    },
   });
   const key = await deriveApplicationKey(extractPrfResult(registration));
   const proof = P256.sign({ payload: appProofPayload(key.encoded), privateKey: key.privateKey, hash: true });
@@ -211,8 +223,7 @@ async function refreshUsers() {
     }))
     .sort(
       (left, right) =>
-        Number(right.isCurrentUser) - Number(left.isCurrentUser) ||
-        (right.createdAt > left.createdAt ? 1 : right.createdAt < left.createdAt ? -1 : left.index - right.index),
+        Number(right.isCurrentUser) - Number(left.isCurrentUser) || (right.createdAt > left.createdAt ? 1 : right.createdAt < left.createdAt ? -1 : left.index - right.index),
     );
   $('#users').innerHTML =
     users
