@@ -34,7 +34,7 @@ spec:
           imagePullPolicy: Always
           command: ["/bin/sh", "-c"]
           args:
-            - pnpm -F passkey app:preview
+            - pnpm -F passkey preview
           ports:
             - containerPort: 3000
           readinessProbe:
