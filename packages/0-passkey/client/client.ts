@@ -90,6 +90,17 @@ function extractPrfResult(result: unknown): Uint8Array {
   return asBytes(first);
 }
 
+async function assertPrfSupport() {
+  if (!window.PublicKeyCredential?.getClientCapabilities) return;
+
+  const capabilities = await PublicKeyCredential.getClientCapabilities();
+  if (capabilities['extension:prf'] !== true) {
+    throw new Error(
+      'This browser or passkey provider does not support PRF. Use an authenticator compatible with WebAuthn PRF.',
+    );
+  }
+}
+
 async function deriveApplicationKey(prf: Uint8Array): Promise<AppKey> {
   const privateKey = P256.fromSeed(prf, { as: 'Hex' });
   const publicKey = P256.getPublicKey({ privateKey });
@@ -115,8 +126,10 @@ async function relay(data: `0x${string}`) {
 // const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 async function register() {
+  await assertPrfSupport();
+
   const hasPlatformAuthenticator = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-  if (!hasPlatformAuthenticator) return window.alert('Questo dispositivo non dispone di Face ID, Touch ID o autenticazione locale compatibile.');
+  if (!hasPlatformAuthenticator) return window.alert('This device does not have Face ID, Touch ID, or compatible local authentication.');
 
   const identifier = $<HTMLInputElement>('#identifier').value.trim();
   if (!identifier) throw new Error('Enter a passkey identifier.');
@@ -152,6 +165,8 @@ async function register() {
 }
 
 async function login() {
+  await assertPrfSupport();
+
   const options = await api<{ challenge: string }>('/auth/login/options', { method: 'POST', body: JSON.stringify({}) });
   const authentication = await webauthn.authenticate({
     challenge: options.challenge,
