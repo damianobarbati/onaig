@@ -756,7 +756,9 @@ function createOnaig({ root, landmark = 'live', auth = createLocalAuthProvider()
           video.srcObject = null;
           restartCameraIfAllowed();
         };
-        acquired.getVideoTracks().forEach((track) => track.addEventListener('ended', handleTrackEnded, { once: true }));
+        acquired.getVideoTracks().forEach((track) => {
+          track.addEventListener('ended', handleTrackEnded, { once: true });
+        });
         video.srcObject = stream;
         await video.play();
         if (cameraId !== cameraRunId) return false;
