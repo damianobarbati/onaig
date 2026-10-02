@@ -21,6 +21,30 @@ await init();
 if (!(await hasP256Precompile(ENV.RPC_URI))) throw new Error('P256 precompile not found');
 if (!(await hasContract(ENV.RPC_URI, ENV.CONTRACT_ADDRESS))) throw new Error('Ledger contract not found');
 
+let reconciliationInFlight = false;
+
+async function reconcileBlockchain(): Promise<void> {
+  if (reconciliationInFlight) return;
+  reconciliationInFlight = true;
+
+  try {
+    if (await hasContract(ENV.RPC_URI, ENV.CONTRACT_ADDRESS)) return;
+
+    console.warn('Ledger contract not found; redeploying it on Anvil.');
+    await init();
+
+    if (!(await hasContract(ENV.RPC_URI, ENV.CONTRACT_ADDRESS))) {
+      throw new Error('Ledger contract was not deployed at the configured address');
+    }
+  } catch (error) {
+    console.error('Blockchain reconciliation failed:', error);
+  } finally {
+    reconciliationInFlight = false;
+  }
+}
+
+setInterval(() => void reconcileBlockchain(), 10_000).unref();
+
 const artifact = JSON.parse(await readFile(new URL('./out/Ledger.sol/Ledger.json', import.meta.url), 'utf8')) as { abi: unknown };
 // Development-only wildcard. In production, restrict this to the deployed origin(s).
 const isAllowedOrigin = () => true;

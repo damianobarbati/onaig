@@ -15,7 +15,24 @@ spec:
       labels:
         app: blockchain
     spec:
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 60
+      initContainers:
+        - name: recover-corrupt-state
+          image: ghcr.io/foundry-rs/foundry:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              state=/data/state.json
+              if [ -f "$state" ] && ! perl -MJSON::PP -0777 -e 'decode_json(<>)' "$state" >/dev/null 2>&1; then
+                timestamp=$(date -u +%Y%m%dT%H%M%SZ)
+                mv "$state" "/data/state.corrupt-$timestamp.json"
+                echo "Archived corrupt Anvil state; starting a new chain."
+              fi
+          volumeMounts:
+            - name: anvil-data
+              mountPath: /data
       containers:
         - name: anvil
           image: ghcr.io/foundry-rs/foundry:latest
