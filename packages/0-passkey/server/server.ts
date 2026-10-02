@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -75,14 +76,15 @@ app.get('/abi', (c) => c.json(artifact.abi));
 app.post('/auth/register/options', async (c) => {
   try {
     const { identifier } = jsonBody<{ identifier?: string }>(await c.req.json());
-    const name = identifier?.trim();
-    if (!name) return c.json({ error: 'Choose a passkey identifier.' }, 400);
-    const existing = await database('users').select('id').where('passkey_identifier', name).first();
-    if (existing) return c.json({ error: 'This passkey identifier is already registered.' }, 409);
+    const username = identifier?.trim();
+    if (!username) return c.json({ error: 'Choose a username.' }, 400);
+    if (Buffer.byteLength(username, 'utf8') > 64) return c.json({ error: 'Username must be at most 64 UTF-8 bytes.' }, 400);
+    const existing = await database('users').select('id').where('username', username).first();
+    if (existing) return c.json({ error: 'This username is already registered.' }, 409);
     const challenge = webauthn.randomChallenge();
     const userHandle = randomUUID();
     const expires_at = new Date(Date.now() + CHALLENGE_TTL_MS);
-    await database('webauthn_challenges').insert({ challenge, kind: 'registration', identifier: name, user_handle: userHandle, expires_at });
+    await database('webauthn_challenges').insert({ challenge, kind: 'registration', identifier: username, user_handle: userHandle, expires_at });
     return c.json({ challenge, userId: userHandle });
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : 'Unable to start registration.' }, 400);
@@ -129,6 +131,7 @@ app.post('/auth/register/verify', async (c) => {
     await database.transaction(async (transaction) => {
       const user = {
         id: pendingRow.user_handle,
+        username: pendingRow.identifier,
         passkey_identifier: verified.credential.id,
         passkey_public_key: verified.credential.publicKey,
         public_key: body.publicKey,
@@ -136,7 +139,7 @@ app.post('/auth/register/verify', async (c) => {
       await transaction('users').insert(user);
       await transaction('webauthn_challenges').where('challenge', pendingRow.challenge).del();
     });
-    return c.json({ identifier: verified.credential.id, publicKey: body.publicKey }, 201);
+    return c.json({ identifier: verified.credential.id, username: pendingRow.identifier, publicKey: body.publicKey }, 201);
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : 'Unable to verify registration.' }, 400);
   }
@@ -157,7 +160,10 @@ app.post('/auth/login/verify', async (c) => {
   try {
     const body = jsonBody<AuthenticationRequest>(await c.req.json());
     assertHexPublicKey(body.publicKey);
-    const user = await database('users').select('id', 'passkey_identifier', 'passkey_public_key', 'public_key').where('passkey_identifier', body.authentication.id).first();
+    const user = await database('users')
+      .select('id', 'username', 'passkey_identifier', 'passkey_public_key', 'public_key')
+      .where('passkey_identifier', body.authentication.id)
+      .first();
     if (!user) return c.json({ error: 'Passkey credential not found.' }, 404);
     if (user.public_key !== body.publicKey) return c.json({ error: 'Derived application key does not match.' }, 401);
     const pending = await database('webauthn_challenges')
@@ -173,7 +179,7 @@ app.post('/auth/login/verify', async (c) => {
       userVerified: true,
     });
     await database('webauthn_challenges').where('challenge', pending.challenge).del();
-    return c.json({ authenticated: true, identifier: user.passkey_identifier, publicKey: user.public_key });
+    return c.json({ authenticated: true, identifier: user.passkey_identifier, username: user.username, publicKey: user.public_key });
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : 'Unable to verify authentication.' }, 401);
   }

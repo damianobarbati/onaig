@@ -5,6 +5,7 @@ CREATE TABLE users
     id                 UUID PRIMARY KEY     DEFAULT uuidv7(),
     created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    username           TEXT        NOT NULL UNIQUE,
     passkey_identifier TEXT        NOT NULL UNIQUE,
     passkey_public_key TEXT        NOT NULL,
     public_key         TEXT        NOT NULL UNIQUE -- derived from passkey public key

@@ -6,6 +6,7 @@ contract Ledger {
   address public constant P256_PRECOMPILE = address(0x100);
 
   struct User {
+    string username;
     bytes32 x;
     bytes32 y;
     uint256 balance;
@@ -17,7 +18,7 @@ contract Ledger {
   mapping(bytes32 => User) private users;
   bytes32[] private userKeys;
 
-  event UserRegistered(bytes32 indexed publicKeyHash, bytes32 x, bytes32 y, uint256 balance);
+  event UserRegistered(bytes32 indexed publicKeyHash, string username, bytes32 x, bytes32 y, uint256 balance);
 
   event FundsTransferred(bytes32 indexed from, bytes32 indexed to, uint256 amount, uint256 nonce);
 
@@ -28,23 +29,28 @@ contract Ledger {
   error InsufficientBalance();
   error InvalidNonce();
   error TransactionExpired();
+  error InvalidUsername();
 
-  function registerUser(bytes32 x, bytes32 y, bytes32 r, bytes32 s) external {
+  function registerUser(string calldata username, bytes32 x, bytes32 y, bytes32 r, bytes32 s) external {
+    if (bytes(username).length == 0 || bytes(username).length > 64) {
+      revert InvalidUsername();
+    }
+
     bytes32 keyHash = _publicKeyHash(x, y);
 
     if (users[keyHash].exists) {
       revert UserAlreadyRegistered();
     }
 
-    bytes32 digest = sha256(abi.encode("PASSKEY_REGISTER", address(this), block.chainid, x, y));
+    bytes32 digest = sha256(abi.encode("PASSKEY_REGISTER", address(this), block.chainid, username, x, y));
 
-    emit UserRegistered(keyHash, x, y, INITIAL_BALANCE);
+    emit UserRegistered(keyHash, username, x, y, INITIAL_BALANCE);
 
     if (!_verifyP256(digest, r, s, x, y)) {
       revert InvalidSignature();
     }
 
-    users[keyHash] = User({x: x, y: y, balance: INITIAL_BALANCE, nonce: 0, createdAt: block.timestamp, exists: true});
+    users[keyHash] = User({username: username, x: x, y: y, balance: INITIAL_BALANCE, nonce: 0, createdAt: block.timestamp, exists: true});
 
     userKeys.push(keyHash);
   }
@@ -138,6 +144,7 @@ contract Ledger {
       bytes32[] memory publicKeyHashes,
       bytes32[] memory xs,
       bytes32[] memory ys,
+      string[] memory usernames,
       uint256[] memory balances,
       uint256[] memory nonces,
       uint256[] memory createdAts
@@ -148,6 +155,7 @@ contract Ledger {
     publicKeyHashes = new bytes32[](length);
     xs = new bytes32[](length);
     ys = new bytes32[](length);
+    usernames = new string[](length);
     balances = new uint256[](length);
     nonces = new uint256[](length);
     createdAts = new uint256[](length);
@@ -159,6 +167,7 @@ contract Ledger {
       publicKeyHashes[i] = keyHash;
       xs[i] = user.x;
       ys[i] = user.y;
+      usernames[i] = user.username;
       balances[i] = user.balance;
       nonces[i] = user.nonce;
       createdAts[i] = user.createdAt;
