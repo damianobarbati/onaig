@@ -128,7 +128,8 @@ async function register() {
     userVerification: 'required',
     discoverable: 'required',
     attestation: false,
-    hints: isMobile ? ['client-device'] : ['hybrid'],
+    // hints: isMobile ? ['client-device'] : ['hybrid'],
+    hints: ['client-device', 'hybrid'],
     customProperties: {
       // authenticatorSelection: {
       //   authenticatorAttachment: 'platform',
