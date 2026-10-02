@@ -95,9 +95,7 @@ async function assertPrfSupport() {
 
   const capabilities = await PublicKeyCredential.getClientCapabilities();
   if (capabilities['extension:prf'] !== true) {
-    throw new Error(
-      'This browser or passkey provider does not support PRF. Use an authenticator compatible with WebAuthn PRF.',
-    );
+    throw new Error('This browser or passkey provider does not support PRF. Use an authenticator compatible with WebAuthn PRF.');
   }
 }
 
@@ -123,7 +121,7 @@ async function relay(data: `0x${string}`) {
   return result.hash;
 }
 
-// const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 async function register() {
   await assertPrfSupport();
@@ -141,8 +139,8 @@ async function register() {
     userVerification: 'required',
     discoverable: 'required',
     attestation: false,
-    // hints: isMobile ? ['client-device'] : ['hybrid'],
-    hints: ['client-device', 'hybrid'],
+    hints: isMobile ? ['client-device'] : ['hybrid'],
+    // hints: ['client-device', 'hybrid'],
     customProperties: {
       // authenticatorSelection: {
       //   authenticatorAttachment: 'platform',
