@@ -12,8 +12,7 @@ Passkey authentication for the blockchain using RIP7212:
 
 ## Faceonly authentication
 
-Do you want to try something cool? **Mobile-ready face authentication**, 
-powered by the ONXX runtime and GhostFaceNets models.
+Mobile-ready face authentication, powered by the ONXX runtime and GhostFaceNets models.  
 Don't worry: your face is not sent anywhere and not stored anywhere!  
 The demo runs completely in the browser.  
 

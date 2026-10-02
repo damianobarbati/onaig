@@ -4,7 +4,7 @@ metadata:
   name: blockchain
   namespace: onaig
 spec:
-  replicas: 1 # Anvil keeps the chain state in memory. Do not run two instances at once.
+  replicas: 1 # Anvil state is persisted on the PVC. Do not run two instances at once.
   strategy:
     type: Recreate
   selector:
@@ -15,6 +15,7 @@ spec:
       labels:
         app: blockchain
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: anvil
           image: ghcr.io/foundry-rs/foundry:latest
@@ -33,6 +34,10 @@ spec:
             - "10000"
             - --block-time
             - "1"
+            - --state
+            - /data/state.json
+            - --state-interval
+            - "10"
           ports:
             - name: rpc
               containerPort: 8545
@@ -65,6 +70,27 @@ spec:
             limits:
               cpu: 250m
               memory: 256Mi
+          volumeMounts:
+            - name: anvil-data
+              mountPath: /data
+      volumes:
+        - name: anvil-data
+          persistentVolumeClaim:
+            claimName: anvil-data
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: anvil-data
+  namespace: onaig
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
 
 ---
 
