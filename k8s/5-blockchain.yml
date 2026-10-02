@@ -26,9 +26,7 @@ spec:
             - |
               state=/data/state.json
               if [ -f "$state" ] && ! perl -MJSON::PP -0777 -e 'decode_json(<>)' "$state" >/dev/null 2>&1; then
-                timestamp=$(date -u +%Y%m%dT%H%M%SZ)
-                mv "$state" "/data/state.corrupt-$timestamp.json"
-                echo "Archived corrupt Anvil state; starting a new chain."
+                rm "$state"
               fi
           volumeMounts:
             - name: anvil-data
