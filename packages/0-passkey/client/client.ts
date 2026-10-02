@@ -90,6 +90,39 @@ function extractPrfResult(result: unknown): Uint8Array {
   return asBytes(first);
 }
 
+type CredentialSignalOptions = { rpId: string; credentialId: string };
+type CredentialSignalApi = typeof PublicKeyCredential & {
+  signalUnknownCredential?: (options: CredentialSignalOptions) => Promise<void>;
+};
+
+async function discardUnsupportedRegistration(credentialId: string) {
+  const signalUnknownCredential = (PublicKeyCredential as CredentialSignalApi).signalUnknownCredential;
+  if (!signalUnknownCredential) return false;
+
+  try {
+    await signalUnknownCredential({ rpId: RP_ID, credentialId });
+    return true;
+  } catch (error) {
+    console.warn('Unable to discard the unsupported passkey credential:', error);
+    return false;
+  }
+}
+
+function assertRegistrationPrfSupport(registration: unknown): Uint8Array {
+  const extensions = registration as {
+    clientExtensionResults?: {
+      prf?: { enabled?: boolean; results?: { first?: unknown } };
+    };
+  };
+  const prf = extensions.clientExtensionResults?.prf;
+
+  if (prf?.enabled !== true || !prf.results?.first) {
+    throw new Error('The selected passkey provider does not support PRF. Choose a compatible passkey provider and try again.');
+  }
+
+  return asBytes(prf.results.first);
+}
+
 async function assertPrfSupport() {
   if (!window.PublicKeyCredential?.getClientCapabilities) return;
 
@@ -140,17 +173,19 @@ async function register() {
     discoverable: 'required',
     attestation: false,
     hints: isMobile ? ['client-device'] : ['hybrid'],
-    // hints: ['client-device', 'hybrid'],
-    customProperties: {
-      // authenticatorSelection: {
-      //   authenticatorAttachment: 'platform',
-      //   residentKey: 'required',
-      //   userVerification: 'required',
-      // },
-      extensions: { prf: { eval: { first: salt } } },
-    },
+    customProperties: { extensions: { prf: { eval: { first: salt } } } },
   });
-  const key = await deriveApplicationKey(extractPrfResult(registration));
+  let prf: Uint8Array;
+  try {
+    prf = assertRegistrationPrfSupport(registration);
+  } catch (error) {
+    const discarded = await discardUnsupportedRegistration(registration.id);
+    if (discarded) throw error;
+    throw new Error(
+      `${error instanceof Error ? error.message : 'The passkey provider does not support PRF.'} If a passkey was saved, remove it from your passkey manager and try again.`,
+    );
+  }
+  const key = await deriveApplicationKey(prf);
   const proof = P256.sign({ payload: appProofPayload(key.encoded), privateKey: key.privateKey, hash: true });
   await api('/auth/register/verify', {
     method: 'POST',
