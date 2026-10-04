@@ -1,6 +1,6 @@
 FROM ghcr.io/foundry-rs/foundry:latest AS contracts
 
-WORKDIR /app/packages/0-passkey
+WORKDIR /app/packages/1-passkey
 USER root
 
 COPY packages/1-passkey ./
@@ -27,8 +27,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json vitest.config
 COPY packages ./packages
 
 COPY --from=contracts \
-  /app/packages/0-passkey/server/out \
-  /app/packages/0-passkey/server/out
+  /app/packages/1-passkey/server/out \
+  /app/packages/1-passkey/server/out
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm -r build

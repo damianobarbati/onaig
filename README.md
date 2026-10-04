@@ -6,7 +6,7 @@
 
 Passkey authentication for the blockchain using RIP7212:  
 - Live demo here: https://onaig-passkey.duckdns.org
-- Code here: [./packages/0-passkey](packages/1-passkey) 
+- Code here: [./packages/1-passkey](packages/1-passkey) 
 
 <img src="./pic-passkey.png" alt="ONAIG Passkey Demo">
 
