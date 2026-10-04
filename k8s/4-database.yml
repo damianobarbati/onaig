@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres
+  name: database
   namespace: onaig
 spec:
   replicas: 1
@@ -9,25 +9,25 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: postgres
+      app: database
   template:
     metadata:
       labels:
-        app: postgres
+        app: database
     spec:
       containers:
-        - name: postgres
+        - name: database
           image: postgres:18-alpine
           imagePullPolicy: IfNotPresent
           env:
-            - name: POSTGRES_DB
+            - name: database_DB
               value: onaig
-            - name: POSTGRES_USER
+            - name: database_USER
               value: user
-            - name: POSTGRES_PASSWORD
+            - name: database_PASSWORD
               value: password
           ports:
-            - name: postgres
+            - name: database
               containerPort: 5432
               protocol: TCP
           readinessProbe:
@@ -51,19 +51,19 @@ spec:
               cpu: 250m
               memory: 256Mi
           volumeMounts:
-            - name: postgres-data
-              mountPath: /var/lib/postgresql
+            - name: database-data
+              mountPath: /var/lib/databaseql
       volumes:
-        - name: postgres-data
+        - name: database-data
           persistentVolumeClaim:
-            claimName: postgres-data
+            claimName: database-data
 
 ---
 
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: postgres-data
+  name: database-data
   namespace: onaig
 spec:
   accessModes:
@@ -77,14 +77,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres
+  name: database
   namespace: onaig
 spec:
   type: ClusterIP
   selector:
-    app: postgres
+    app: database
   ports:
-    - name: postgres
+    - name: database
       port: 5432
-      targetPort: postgres
+      targetPort: database
       protocol: TCP
