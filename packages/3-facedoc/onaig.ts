@@ -1303,4 +1303,3 @@ function createOnaig({ root, landmark = 'live', auth = createLocalAuthProvider()
 }
 
 export default createOnaig;
-

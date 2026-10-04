@@ -20,24 +20,42 @@ export function captureVideoFrame(video: HTMLVideoElement, quality = 0.9): strin
   return canvas.toDataURL('image/jpeg', quality);
 }
 
-export function createFaceDocHttpProvider({ baseUrl = '', fetchImpl = globalThis.fetch, getDocumentImage, onResult }: { baseUrl?: string; fetchImpl?: typeof fetch; getDocumentImage: () => string; onResult?: (result: FaceDocResult) => void } ): FaceDocProvider {
+export function createFaceDocHttpProvider({
+  baseUrl = '',
+  fetchImpl = globalThis.fetch,
+  getDocumentImage,
+  onResult,
+}: {
+  baseUrl?: string;
+  fetchImpl?: typeof fetch;
+  getDocumentImage: () => string;
+  onResult?: (result: FaceDocResult) => void;
+}): FaceDocProvider {
   if (typeof fetchImpl !== 'function') throw new TypeError('An HTTP provider requires fetch.');
   const apiBaseUrl = baseUrl.replace(/\/$/, '');
   const request = async (path: string, body?: unknown) => {
     const response = await fetchImpl(`${apiBaseUrl}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-    let payload: FaceDocResult & { error?: string } = {};
-    try { payload = await response.json(); } catch { /* status is enough */ }
+    let payload: FaceDocResult & { error?: string } = { matched: false };
+    try {
+      payload = await response.json();
+    } catch {
+      /* status is enough */
+    }
     return { response, payload };
   };
   return {
-    async enroll(embeddings) { return this.enrollDocument(embeddings, getDocumentImage()); },
+    async enroll(embeddings) {
+      return this.enrollDocument(embeddings, getDocumentImage());
+    },
     async enrollDocument(embeddings, documentImageBase64) {
       const { response, payload } = await request('/enroll', { faces: embeddings, documentImageBase64 });
       if (!response.ok) throw new Error(payload.error || `Document enrollment failed (${response.status}).`);
       onResult?.(payload);
       return payload;
     },
-    async authenticate(): Promise<AuthResult> { return { authenticated: false }; },
+    async authenticate(): Promise<AuthResult> {
+      return { authenticated: false };
+    },
   };
 }
 
