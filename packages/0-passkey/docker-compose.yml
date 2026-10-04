@@ -16,24 +16,34 @@ services:
       timeout: 1s
       retries: 3
 
-  anvil:
-    image: ghcr.io/foundry-rs/foundry:latest
-    container_name: onaig-bc
+  besu:
+    image: hyperledger/besu:26.8.1@sha256:6f3f21ce533383fcc8db3bce02252b59d5a9e776b72b5a1c8ecd2db011600042
+    container_name: onaig-besu
     restart: unless-stopped
-    entrypoint: ""
-    command: >
-      anvil
-      --host 0.0.0.0
-      --chain-id 31337
-      --hardfork osaka
-      --accounts 10
-      --balance 10000
-      --block-time 1
+    command:
+      - --data-path=/var/lib/besu
+      - --genesis-file=/etc/besu/genesis.json
+      - --node-private-key-file=/etc/besu/node.key
+      - --network-id=31337
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,WEB3,TXPOOL,QBFT
+      - --rpc-http-host=0.0.0.0
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --p2p-enabled=true
+      - --p2p-host=127.0.0.1
+    volumes:
+      - ../../.besu-network/genesis.json:/etc/besu/genesis.json:ro
+      - ../../.besu-network/node.key:/etc/besu/node.key:ro
+      - besu-data:/var/lib/besu
     ports:
       - "8545:8545"
     healthcheck:
-      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://127.0.0.1:8545"]
-      start_period: 1s
-      interval: 1s
-      timeout: 1s
-      retries: 3
+      test: ["CMD-SHELL", "bash -ec 'echo > /dev/tcp/127.0.0.1/8545'"]
+      start_period: 10s
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+volumes:
+  besu-data:

@@ -14,7 +14,7 @@ const abiResponse = await fetch(`${API_URL}/abi`);
 if (!abiResponse.ok) throw new Error(`Unable to load the contract ABI (${abiResponse.status}).`);
 const ledgerAbi = (await abiResponse.json()) as Abi;
 
-// Keep the RPC behind the Vite dev proxy so the browser never connects to Anvil directly.
+// Keep the RPC behind the Vite dev proxy so the browser never connects to Besu directly.
 const chainClient = createPublicClient({ transport: http('/rpc') });
 const wsChainClient = createPublicClient({
   transport: webSocket('/rpc', {

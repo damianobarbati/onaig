@@ -9,7 +9,7 @@ const proxy = {
     rewrite: (path) => path.replace(/^\/api/, ''),
   },
   '/rpc': {
-    target: isKubernetes ? 'http://anvil:8545' : 'http://127.0.0.1:8545',
+    target: isKubernetes ? 'http://besu:8545' : 'http://127.0.0.1:8545',
     changeOrigin: true,
     rewrite: (path) => path.replace(/^\/rpc/, '') || '/',
     ws: true,

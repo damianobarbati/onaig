@@ -7,16 +7,16 @@ import { ENV } from './env.ts';
 
 const artifact = JSON.parse(await readFile(new URL('./out/Ledger.sol/Ledger.json', import.meta.url), 'utf8'));
 
-const anvil = defineChain({
+const besu = defineChain({
   id: 31337,
-  name: 'Anvil',
+  name: 'Onaig Besu',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: { default: { http: [ENV.RPC_URI] } },
 });
 
 const account = privateKeyToAccount(ENV.MASTER_PRIVATE_KEY);
-const walletClient = createWalletClient({ chain: anvil, transport: http(ENV.RPC_URI), account });
-const publicClient = createPublicClient({ chain: anvil, transport: http(ENV.RPC_URI) });
+const walletClient = createWalletClient({ chain: besu, transport: http(ENV.RPC_URI), account });
+const publicClient = createPublicClient({ chain: besu, transport: http(ENV.RPC_URI) });
 
 export async function deployContract(): Promise<`0x${string}` | null> {
   const hash = await walletClient.deployContract({ abi: artifact.abi, bytecode: artifact.bytecode.object, account });

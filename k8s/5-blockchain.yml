@@ -4,7 +4,7 @@ metadata:
   name: blockchain
   namespace: onaig
 spec:
-  replicas: 1 # Anvil state is persisted on the PVC. Do not run two instances at once.
+  replicas: 1 # One validator for now; QBFT HA requires at least four validators.
   strategy:
     type: Recreate
   selector:
@@ -15,104 +15,102 @@ spec:
       labels:
         app: blockchain
     spec:
-      terminationGracePeriodSeconds: 60
-      initContainers:
-        - name: recover-corrupt-state
-          image: ghcr.io/foundry-rs/foundry:latest
-          imagePullPolicy: IfNotPresent
-          command:
-            - /bin/sh
-            - -ec
-            - |
-              state=/data/state.json
-              if [ -f "$state" ] && ! perl -MJSON::PP -0777 -e 'decode_json(<>)' "$state" >/dev/null 2>&1; then
-                rm "$state"
-              fi
-          volumeMounts:
-            - name: anvil-data
-              mountPath: /data
+      terminationGracePeriodSeconds: 180
       containers:
-        - name: anvil
-          image: ghcr.io/foundry-rs/foundry:latest
+        - name: besu
+          image: hyperledger/besu:26.8.1@sha256:6f3f21ce533383fcc8db3bce02252b59d5a9e776b72b5a1c8ecd2db011600042
           imagePullPolicy: IfNotPresent
-          command: ["anvil"]
+          command: ["/opt/besu/bin/besu"]
           args:
-            - --host
-            - 0.0.0.0
-            - --chain-id
-            - "31337"
-            - --hardfork
-            - osaka
-            - --accounts
-            - "10"
-            - --balance
-            - "10000"
-            - --block-time
-            - "1"
-            - --state
-            - /data/state.json
-            - --state-interval
-            - "10"
+            - --data-path=/var/lib/besu
+            - --genesis-file=/etc/besu/genesis.json
+            - --node-private-key-file=/etc/besu/node.key
+            - --network-id=31337
+            - --rpc-http-enabled
+            - --rpc-http-api=ETH,NET,WEB3,TXPOOL,QBFT
+            - --rpc-http-host=0.0.0.0
+            - --host-allowlist=*
+            - --rpc-http-cors-origins=*
+            - --p2p-enabled=true
+            - --p2p-host=127.0.0.1
+            - --logging=INFO
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/bash
+                  - -ec
+                  - |
+                    kill -INT 1 || true
+                    while kill -0 1 2>/dev/null; do sleep 1; done
           ports:
             - name: rpc
               containerPort: 8545
               protocol: TCP
           readinessProbe:
-            exec:
-              command:
-                - cast
-                - chain-id
-                - --rpc-url
-                - http://127.0.0.1:8545
-            initialDelaySeconds: 1
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 5
             periodSeconds: 2
             timeoutSeconds: 2
-            failureThreshold: 15
+            failureThreshold: 30
           livenessProbe:
-            exec:
-              command:
-                - cast
-                - chain-id
-                - --rpc-url
-                - http://127.0.0.1:8545
-            initialDelaySeconds: 10
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 30
             periodSeconds: 10
-            timeoutSeconds: 2
+            timeoutSeconds: 3
+            failureThreshold: 6
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
-            limits:
               cpu: 250m
-              memory: 256Mi
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
           volumeMounts:
-            - name: anvil-data
-              mountPath: /data
+            - name: besu-data
+              mountPath: /var/lib/besu
+            - name: besu-genesis
+              mountPath: /etc/besu/genesis.json
+              subPath: genesis.json
+              readOnly: true
+            - name: besu-validator-key
+              mountPath: /etc/besu/node.key
+              subPath: node.key
+              readOnly: true
       volumes:
-        - name: anvil-data
+        - name: besu-data
           persistentVolumeClaim:
-            claimName: anvil-data
+            claimName: besu-data
+        - name: besu-genesis
+          configMap:
+            name: besu-genesis
+        - name: besu-validator-key
+          secret:
+            secretName: besu-validator-key
+            defaultMode: 0400
 
 ---
 
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: anvil-data
+  name: besu-data
   namespace: onaig
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 20Gi
 
 ---
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: anvil
+  name: besu
   namespace: onaig
 spec:
   type: ClusterIP
@@ -162,6 +160,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: anvil
+                name: besu
                 port:
                   number: 8545

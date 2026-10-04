@@ -31,7 +31,7 @@ async function reconcileBlockchain(): Promise<void> {
   try {
     if (await hasContract(ENV.RPC_URI, ENV.CONTRACT_ADDRESS)) return;
 
-    console.warn('Ledger contract not found; redeploying it on Anvil.');
+    console.warn('Ledger contract not found; redeploying it on Besu.');
     await init();
 
     if (!(await hasContract(ENV.RPC_URI, ENV.CONTRACT_ADDRESS))) {
@@ -51,9 +51,9 @@ const artifact = JSON.parse(await readFile(new URL('./out/Ledger.sol/Ledger.json
 const isAllowedOrigin = () => true;
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
-const anvil = defineChain({ id: 31337, name: 'Anvil', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [ENV.RPC_URI] } } });
+const besu = defineChain({ id: 31337, name: 'Onaig Besu', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [ENV.RPC_URI] } } });
 const masterAccount = privateKeyToAccount(ENV.MASTER_PRIVATE_KEY);
-const walletClient = createWalletClient({ account: masterAccount, chain: anvil, transport: http(ENV.RPC_URI) });
+const walletClient = createWalletClient({ account: masterAccount, chain: besu, transport: http(ENV.RPC_URI) });
 
 type RegistrationRequest = {
   registration: Parameters<typeof webauthn.verifyRegistration>[0];
@@ -189,7 +189,7 @@ app.post('/relay', async (c) => {
   try {
     const { transaction } = jsonBody<{ transaction?: unknown }>(await c.req.json());
     const request = parseRelayTransaction(ENV.CONTRACT_ADDRESS, transaction);
-    const hash = await walletClient.sendTransaction({ ...request, account: masterAccount, chain: anvil });
+    const hash = await walletClient.sendTransaction({ ...request, account: masterAccount, chain: besu });
     return c.json({ hash });
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : 'Unable to relay transaction.' }, 400);

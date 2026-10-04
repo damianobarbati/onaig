@@ -2,9 +2,14 @@
 
 ## Quick start
 
-The PoC uses a dockerized `postgresql` database and `anvil` blockchain:
+The PoC uses a dockerized `postgresql` database and Besu blockchain:
 - Postgres available at: `postgresql://user:password@localhost:5432/onaig`
-- RPC Anvil available at: `http://127.0.0.1:8545`
+- RPC Besu available at: `http://127.0.0.1:8545`
+
+Before starting the local environment, generate the Besu genesis and validator key:
+```sh
+./scripts/generate-besu-network.sh
+```
 
 To start, install deps with `pnpm i` in the root folder, then:
 ```sh
