@@ -229,9 +229,11 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@26.6.4)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(vite@8.3.2(@types/node@26.6.4)(jiti@2.7.0))
 
-  packages/0-passkey: {}
+  packages/1-passkey: {}
 
-  packages/1-faceonly: {}
+  packages/2-faceonly: {}
+
+  packages/3-facedoc: {}
 
 packages:
 

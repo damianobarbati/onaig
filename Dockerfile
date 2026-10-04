@@ -3,7 +3,7 @@ FROM ghcr.io/foundry-rs/foundry:latest AS contracts
 WORKDIR /app/packages/0-passkey
 USER root
 
-COPY packages/0-passkey ./
+COPY packages/1-passkey ./
 
 RUN forge build \
     --root . \

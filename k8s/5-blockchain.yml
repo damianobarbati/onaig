@@ -1,12 +1,14 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: blockchain
   namespace: onaig
 spec:
-  replicas: 1 # Anvil state is persisted on the PVC. Do not run two instances at once.
-  strategy:
-    type: Recreate
+  serviceName: anvil
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       app: blockchain
@@ -17,46 +19,55 @@ spec:
     spec:
       terminationGracePeriodSeconds: 60
       initContainers:
-        - name: recover-corrupt-state
-          image: ghcr.io/foundry-rs/foundry:latest
+        - name: restore-state
+          image: ghcr.io/foundry-rs/foundry@sha256:2dbf3d0fc58593ad9d01ef57677f93f83f4987acd295d17f303448d82e3a3ae7
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
             - -ec
             - |
               state=/data/state.json
-              if [ -f "$state" ] && ! perl -MJSON::PP -0777 -e 'decode_json(<>)' "$state" >/dev/null 2>&1; then
-                rm "$state"
+              runtime=/run/anvil/state.json
+              if [ -f "$state" ] && perl -MJSON::PP -0777 -e 'decode_json(<>)' "$state" >/dev/null 2>&1; then
+                cp "$state" "$runtime"
+              else
+                rm -f "$state"
               fi
           volumeMounts:
             - name: anvil-data
               mountPath: /data
+            - name: anvil-runtime
+              mountPath: /run/anvil
       containers:
         - name: anvil
-          image: ghcr.io/foundry-rs/foundry:latest
+          image: ghcr.io/foundry-rs/foundry@sha256:2dbf3d0fc58593ad9d01ef57677f93f83f4987acd295d17f303448d82e3a3ae7
           imagePullPolicy: IfNotPresent
-          command: ["anvil"]
+          command: ["/bin/sh", "-ec"]
           args:
-            - --host
-            - 0.0.0.0
-            - --chain-id
-            - "31337"
-            - --hardfork
-            - osaka
-            - --accounts
-            - "10"
-            - --balance
-            - "10000"
-            - --block-time
-            - "1"
-            - --state
-            - /data/state.json
-            - --state-interval
-            - "10"
+            - |
+              exec flock -n -E 75 /data/anvil.lock anvil \
+                --host 0.0.0.0 \
+                --chain-id 31337 \
+                --hardfork osaka \
+                --accounts 10 \
+                --balance 10000 \
+                --block-time 1 \
+                --state /run/anvil/state.json \
+                --state-interval 5
           ports:
             - name: rpc
               containerPort: 8545
               protocol: TCP
+          startupProbe:
+            exec:
+              command:
+                - cast
+                - chain-id
+                - --rpc-url
+                - http://127.0.0.1:8545
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 30
           readinessProbe:
             exec:
               command:
@@ -64,7 +75,6 @@ spec:
                 - chain-id
                 - --rpc-url
                 - http://127.0.0.1:8545
-            initialDelaySeconds: 1
             periodSeconds: 2
             timeoutSeconds: 2
             failureThreshold: 15
@@ -75,23 +85,52 @@ spec:
                 - chain-id
                 - --rpc-url
                 - http://127.0.0.1:8545
-            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 2
+            failureThreshold: 3
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
-            limits:
               cpu: 250m
-              memory: 256Mi
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
           volumeMounts:
             - name: anvil-data
               mountPath: /data
+            - name: anvil-runtime
+              mountPath: /run/anvil
+        - name: snapshot-state
+          image: ghcr.io/foundry-rs/foundry@sha256:2dbf3d0fc58593ad9d01ef57677f93f83f4987acd295d17f303448d82e3a3ae7
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              while true; do
+                runtime=/run/anvil/state.json
+                temporary=/data/.state.json.tmp
+                if [ -s "$runtime" ]; then
+                  cp "$runtime" "$temporary"
+                  if cmp -s "$runtime" "$temporary" && perl -MJSON::PP -0777 -e 'decode_json(<>)' "$temporary" >/dev/null 2>&1; then
+                    mv -f "$temporary" /data/state.json
+                  else
+                    rm -f "$temporary"
+                  fi
+                fi
+                sleep 5
+              done
+          volumeMounts:
+            - name: anvil-data
+              mountPath: /data
+            - name: anvil-runtime
+              mountPath: /run/anvil
       volumes:
         - name: anvil-data
           persistentVolumeClaim:
             claimName: anvil-data
+        - name: anvil-runtime
+          emptyDir: {}
 
 ---
 
@@ -123,6 +162,19 @@ spec:
       port: 8545
       targetPort: rpc
       protocol: TCP
+
+---
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: blockchain
+  namespace: onaig
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: blockchain
 
 ---
 
