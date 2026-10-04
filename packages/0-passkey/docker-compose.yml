@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:18-alpine
-    container_name: onaig-db
+    container_name: db
     restart: unless-stopped
     environment:
       POSTGRES_DB: onaig
@@ -18,7 +18,7 @@ services:
 
   anvil:
     image: ghcr.io/foundry-rs/foundry:latest
-    container_name: onaig-bc
+    container_name: bc
     restart: unless-stopped
     entrypoint: ""
     command: >
