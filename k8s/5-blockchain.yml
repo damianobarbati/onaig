@@ -15,11 +15,11 @@ spec:
       labels:
         app: blockchain
     spec:
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: 30
       initContainers:
         - name: restore-state
-          image: ghcr.io/foundry-rs/foundry@sha256:2dbf3d0fc58593ad9d01ef57677f93f83f4987acd295d17f303448d82e3a3ae7
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/foundry-rs/foundry:latest
+          imagePullPolicy: Always
           command:
             - /bin/sh
             - -ec
@@ -38,8 +38,8 @@ spec:
               mountPath: /run/anvil
       containers:
         - name: anvil
-          image: ghcr.io/foundry-rs/foundry@sha256:2dbf3d0fc58593ad9d01ef57677f93f83f4987acd295d17f303448d82e3a3ae7
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/foundry-rs/foundry:latest
+          imagePullPolicy: Always
           command: ["/bin/sh", "-ec"]
           args:
             - |
@@ -99,8 +99,8 @@ spec:
             - name: anvil-runtime
               mountPath: /run/anvil
         - name: snapshot-state
-          image: ghcr.io/foundry-rs/foundry@sha256:2dbf3d0fc58593ad9d01ef57677f93f83f4987acd295d17f303448d82e3a3ae7
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/foundry-rs/foundry:latest
+          imagePullPolicy: Always
           command:
             - /bin/sh
             - -ec
