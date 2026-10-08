@@ -1,0 +1,35 @@
+{
+  "name": "passkey",
+  "type": "module",
+  "scripts": {
+    "bc:compile": "forge build --root . --contracts server --out server/out --use 0.8.24 --via-ir --optimize --no-cache",
+    "bc:deploy": "node ./server/deploy.ts",
+    "api": "node --no-warnings --import=amaro/transform --watch ./server/server.ts",
+    "web": "pnpm vite dev --config ./vite.config.ts --open",
+    "build": "pnpm vite build",
+    "preview": "pnpm vite preview"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.4",
+    "@passwordless-id/webauthn": "^2.4.1",
+    "amaro": "^1.2.1",
+    "hono": "^4.13.13",
+    "knex": "^3.3.0",
+    "ox": "^1.8.6",
+    "pg": "^8.23.1",
+    "viem": "^2.57.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
+    "@vitest/browser-playwright": "^5.0.3",
+    "@vitest/coverage-v8": "^5.0.3",
+    "concurrently": "^10.0.5",
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.87.0",
+    "playwright": "^1.64.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
+  }
+}

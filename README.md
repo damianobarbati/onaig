@@ -1,24 +1,14 @@
 # ONAIG
 
-**Giano** - reversed.
+**Giano** reversed.  
+Passkey authentication for EVM transactions leveraging:
+- RIP-7212 (P256 signature verification)
+- ERC-4337 (account abstraction for smart wallets)
+- ERC-7677 (paymaster)
 
-## Passkey authentication and EVM transactions
+Live demo here: https://onaig-passkey.duckdns.org
 
-Passkey authentication for the blockchain using RIP7212:  
-- Live demo here: https://onaig-passkey.duckdns.org
-- Code here: [./packages/1-passkey](packages/1-passkey) 
-
-<img src="./pic-passkey.png" alt="ONAIG Passkey Demo">
-
-## Faceonly authentication
-
-Mobile-ready face authentication, powered by the ONXX runtime and GhostFaceNets models.  
-Don't worry: your face is not sent anywhere and not stored anywhere!  
-The demo runs completely in the browser.  
-
-Try the demo here: https://onaig-faceonly.duckdns.org
-
-<img src="./pic-faceonly.png" alt="ONAIG Faceonly Demo">
+<img src="screenshot.png" alt="ONAIG Passkey Demo">
 
 ## Development
 
@@ -29,15 +19,36 @@ npm install -g corepack
 corepack enable
 corepack install
 pnpm install
+pnpm env:down
+pnpm env:up
 ```
 
 Linting:
 ```sh
-pnpm lint # lint
-pnpm tsc # typecheck
+pnpm lint
+pnpm tsc
 ```
 
 Testing:
 ```sh
 pnpm -r test
+```
+
+To develop:
+```sh
+pnpm -F passkey bc:compile
+pnpm -F passkey api
+pnpm -F passkey dev
+# start ngrok!
+# npx ngrok start --all --config ./ngrok.yml --authtoken <token>
+```
+
+To demo:
+```sh
+pnpm -F passkey bc:compile
+pnpm -F passkey api
+pnpm -F passkey build
+pnpm -F passkey preview
+# start ngrok!
+# npx ngrok start --all --config ./ngrok.yml --authtoken <token>
 ```

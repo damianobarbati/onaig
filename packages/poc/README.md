@@ -6,23 +6,6 @@ The PoC uses a dockerized `postgresql` database and `anvil` blockchain:
 - Postgres available at: `postgresql://user:password@localhost:5432/onaig`
 - RPC Anvil available at: `http://127.0.0.1:8545`
 
-To start, install deps with `pnpm i` in the root folder, then:
-```sh
-pnpm -F passkey env:down
-pnpm -F passkey env:up
-pnpm -F passkey bc:compile
-pnpm -F passkey api
-pnpm -F passkey dev
-# start ngrok!
-```
-
-To demo:
-```sh
-pnpm -F passkey api
-pnpm -F passkey build
-pnpm -F passkey preview
-```
-
 ## About
 
 In this PoC we cover the following use case:
